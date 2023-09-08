@@ -27,9 +27,9 @@ def calc(beta1, phy1, b_pos_x, b_pos_y, debug=True):
     L_1     = 0               # [mm] B点の位置誤差
 
     B_POS   = (b_pos_x, b_pos_y)
-    X1, _ = B_POS
-    Y1 = X1 / tan( rad(BETA_1) ) # 13.1
-    R  = 12.7
+    X1, _   = B_POS
+    Y1      = X1 / tan( rad(BETA_1) ) # 13.1
+    R       = 12.7
     GAMMA_1 = BETA_1
     if debug: print(f"#1\nX1 = {abs(X1)} mm\nY1 = {abs(Y1)} mm\nR  = {R} mm\nγ1 = {GAMMA_1} deg\n")
 
@@ -48,10 +48,10 @@ def calc(beta1, phy1, b_pos_x, b_pos_y, debug=True):
 
 
     # 4 アクリル製プリズム (+ガラス) から空気へ
-    N_1_2   = N_2 / N_1
-    THETA_1 = 90 - BETA_1 - ALPHA_1
-    THETA_2 = get_theta2(N_1_2, THETA_1)
-    GAMMA_2         = 90 - ALPHA_1 - THETA_2
+    N_1_2         = N_2 / N_1
+    THETA_1       = 90 - BETA_1 - ALPHA_1
+    THETA_2       = get_theta2(N_1_2, THETA_1)
+    GAMMA_2       = 90 - ALPHA_1 - THETA_2
 
     THETA_1_CRIT  = deg(asin(N_1_2))
     THETA_2_IDEAL = 90 - ALPHA_1
