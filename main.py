@@ -101,4 +101,12 @@ if __name__ == '__main__':
         RES = _temp
     
     beta_1, theta_1, theta_2, gamma_2, theta_1_crit, theta_2_ideal = RES
-    print(f"\n======\n入射角 = {round(theta_1, 4)} deg\n  (臨界まで: 約{round(theta_1_crit - theta_1, 3)} deg)\n屈折角 = {round(theta_2, 4)} deg\n  (理想値との差: 約{round(theta_2_ideal - theta_2, 3)} deg)\n傾斜角 = {gamma_2}\n")
+    print(f"""
+======
+入射角 = {round(theta_1, 4)} deg
+(臨界まで: 約{round(theta_1_crit - theta_1, 3)} deg)
+屈折角 = {round(theta_2, 4)} deg
+(理想値との差: 約{round(theta_2_ideal - theta_2, 3)} deg)
+傾斜角 = {gamma_2}
+"""
+    )
