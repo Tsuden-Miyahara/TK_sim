@@ -25,3 +25,4 @@ if __name__ == '__main__':
         *(0, -(7.72 * tan(rad(30.5))))
     )
     print(v)
+    print( get_theta2(1 / 1.459, 42.05) )

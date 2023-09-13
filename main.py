@@ -61,42 +61,60 @@ def calc(beta1, phy1, b_pos_x, b_pos_y, debug=True):
 
 
 
+class POS:
+    CENTER_MARGIN = 1
+    STATIC_CENTER = (-7.72, -13.29)
+    @classmethod
+    def CENTER(self, _):
+        return self.STATIC_CENTER
+    @classmethod
+    def UPPER(self, beta_1):
+        x, y = self.STATIC_CENTER
+        return (x - sin(beta_1) * self.CENTER_MARGIN, y + cos(beta_1) * self.CENTER_MARGIN)
+    @classmethod
+    def LOWER(self, beta_1):
+        x, y = self.STATIC_CENTER
+        return (x + sin(beta_1) * self.CENTER_MARGIN, y - cos(beta_1) * self.CENTER_MARGIN)
+
 
 if __name__ == '__main__':
     import os
+    from matplotlib import pyplot
     os.system('cls')
     
-    plus_minus = 1
-    POS_CENTER = lambda _: (-7.72, -13.29)
-    def POS_UPPER(b):
-        x, y = POS_CENTER(b)
-        return (x - sin(b) * plus_minus, y + cos(b) * plus_minus)
-    def POS_LOWER(b):
-        x, y = POS_CENTER(b)
-        return (x + sin(b) * plus_minus, y - cos(b) * plus_minus)
         
     # 変数ここから
     base = 30.5             # β1の初期値
     step = 0.01             # 刻み
     repeat = 1000           # 繰り返し
     
-    tolerance = 0.3         # 屈折角の理想値と算出値の許容差
+    tolerance = 0.3         # 屈折角の理想値と算出値の最大許容差
     
-    pos_target = POS_CENTER # 入射点
+    pos_target = POS.CENTER # 入射点
     # ここまで
     
+    
+    X = []
+    Y1 = []
+    Y2 = []
     RES = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
     print(f"探索中 (β1: {base} deg -> {base - repeat * step} deg [{step}刻み])")
     for n in range(repeat):
         v = base - n * step
         _temp = calc(v, 24.5, *pos_target(v), False)
         beta_1, theta_1, theta_2, gamma_2, theta_1_crit, theta_2_ideal = _temp
-        if (theta_2_ideal - theta_2 < tolerance):
+        t2 = theta_2_ideal - theta_2
+        
+        X  += [v]
+        Y1 += [theta_2]
+        Y2 += [theta_2_ideal]
+        
+        if (abs(t2) < tolerance):
             RES = _temp
-            print(f"探索中断 (β1: {v} deg)")
+            print(f"探索中断 [{n} / {repeat}] (β1: {v} deg)")
             break
         elif (theta_2_ideal < theta_2) or (theta_1_crit < theta_1):
-            print(f"探索中断 (β1: {RES[0]} deg)")
+            print(f"探索中断 [{n - 1} / {repeat}] (β1: {RES[0]} deg)")
             break
         RES = _temp
     
@@ -110,3 +128,15 @@ if __name__ == '__main__':
 傾斜角 = {gamma_2}
 """
     )
+    l = len(X)
+    
+    pyplot.ylim(0, 90)
+    pyplot.plot(X, Y1, label="calculated")
+    pyplot.plot(X, Y2, label="ideal")
+    pyplot.plot(X[l - 1], Y1[l - 1], '*')
+    pyplot.plot(X[l - 1], Y2[l - 1], '*')
+    pyplot.xlabel('β1 [deg]')
+    pyplot.ylabel('θ2')
+    pyplot.legend()
+    pyplot.grid()
+    pyplot.show()
