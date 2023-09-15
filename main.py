@@ -128,14 +128,27 @@ if __name__ == '__main__':
     while True:
         os.system('cls')
         
-        phi = qs.select(
-            '液菅径',
-            choices=[
-                qs.Choice(title="Φ6", value=6),
-                qs.Choice(title="Φ12", value=12),
-                qs.Choice(title="Φ24.5", value=24.5),
-            ],
-        ).ask()
+        phi = None
+        
+        while phi is None or phi == -1:
+            phi = qs.select(
+                '液菅径',
+                choices=[
+                    qs.Choice(title="Φ6", value=6),
+                    qs.Choice(title="Φ12", value=12),
+                    qs.Choice(title="Φ24.5", value=24.5),
+                    qs.Choice(title="...その他", value=-1),
+                ],
+            ).ask()
+            if phi == -1:
+                phi = -1
+                while ((type(phi) is not int) and (type(phi) is not float)) or phi < 0 or 25 < phi:
+                    phi = qs.text('液菅径 [mm] (0.0 - 25.0): ').ask()
+                    try:
+                        phi = float(phi)
+                    except ValueError:
+                        phi = -1
+                        break
         
         pm = -1
         while ((type(pm) is not int) and (type(pm) is not float)) or pm < 0 or 5 < pm:
