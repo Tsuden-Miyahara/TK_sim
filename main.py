@@ -103,83 +103,175 @@ def calc(b_pos_x: float, b_pos_y: float, beta_1: float, holder_r: float, tube_r:
 
 
 
+CENTER_MARGIN = 1
+STATIC_CENTER = (-7.72, -13.29)
 class POS:
-    CENTER_MARGIN = 1
-    STATIC_CENTER = (-7.72, -13.29)
     @classmethod
-    def CENTER(self, _):
-        return self.STATIC_CENTER
+    def CENTER(self, _=None):
+        return STATIC_CENTER
     @classmethod
     def UPPER(self, beta_1):
-        x, y = self.STATIC_CENTER
-        return (x - sin(beta_1) * self.CENTER_MARGIN, y + cos(beta_1) * self.CENTER_MARGIN)
+        x, y = STATIC_CENTER
+        return (x - sin(beta_1) * CENTER_MARGIN, y + cos(beta_1) * CENTER_MARGIN)
     @classmethod
     def LOWER(self, beta_1):
-        x, y = self.STATIC_CENTER
-        return (x + sin(beta_1) * self.CENTER_MARGIN, y - cos(beta_1) * self.CENTER_MARGIN)
+        x, y = STATIC_CENTER
+        return (x + sin(beta_1) * CENTER_MARGIN, y - cos(beta_1) * CENTER_MARGIN)
 
 
 if __name__ == '__main__':
     import os
     from matplotlib import pyplot
-    os.system('cls')
+    import questionary as qs
+    from typing import List
+    
+    while True:
+        os.system('cls')
+        
+        phi = qs.select(
+            '液菅径',
+            choices=[
+                qs.Choice(title="Φ6", value=6),
+                qs.Choice(title="Φ12", value=12),
+                qs.Choice(title="Φ24.5", value=24.5),
+            ],
+        ).ask()
+        
+        pm = -1
+        while ((type(pm) is not int) and (type(pm) is not float)) or pm < 0 or 5 < pm:
+            pm = qs.text('L1 (= B点の位置誤差) [mm] (0.0 - 5.0)\n  <初期値=1.5>: ').ask()
+            if pm == '':
+                pm = 1.5
+            else:
+                try:
+                    pm = float(pm)
+                except ValueError:
+                    continue
+        ag = -1
+        while ((type(ag) is not int) and (type(ag) is not float)) or ag < 0 or 15 < ag:
+            ag = qs.text('θ6の理想値と算出値の最大許容差 [deg] (0.0 - 15.0)\n  <初期値=1>: ').ask()
+            if ag == '':
+                ag = 1
+            else:
+                try:
+                    ag = float(ag)
+                except ValueError:
+                    continue
+            
 
-    beta_1 = 40             # β1の初期値
-    step = 0.01             # 刻み
-    repeat = 10000          # 繰り返し
-    
-    tolerance = 0.5         # θ6の理想値と算出値の最大許容差
-    
-    # 液菅直径 [6 - 24.5]
-    tube_d = 24.5
-    # 入射点 [UPPER, CENTER, LOWER]
-    pos_target = POS.CENTER
-    
-    
-    X = []
-    Y1 = []
-    Y2 = []
-    OKAY = []
-    print(f"探索中 (β1: {beta_1} deg -> {beta_1 - repeat * step} deg [{step}刻み])")
-    is_valid = False
-    for n in range(repeat):
-        v = beta_1 - n * step
+        beta_1 = 30.5             # β1の初期値
+        
+        step = 0.001             # 刻み
+        repeat = int(pm * 1000)          # 繰り返し
+        
+        tolerance = ag         # θ6の理想値と算出値の最大許容差
+        
+        # 液菅直径 [6 - 24.5]
+        tube_d = phi
+        
+        X: List[float] = []
+        Y1: List[float] = []
+        Y2: List[float] = []
+        OKAY: List[float] = []
+        # print(f"探索中 (β1: {beta_1} deg -> {beta_1 - repeat * step} deg [{step}刻み])")
+        
+
+        
+        is_valid_upper = False
+        is_valid_lower = False
+        
+        for n in range(repeat - 1):
+            CENTER_MARGIN = (n + 1) * step
+            # upper
+            try:
+                THETA_6, THETA_6_IDEAL = calc(*POS.UPPER(beta_1), beta_1, 12.7, tube_d / 2, 1)
+                print(f"θ6: {THETA_6}, θ6_id: {THETA_6_IDEAL}")
+                is_valid_upper = True
+
+                THETA_6_DELTA = THETA_6_IDEAL - THETA_6
+                
+                X  += [CENTER_MARGIN]
+                Y1 += [THETA_6]
+                Y2 += [THETA_6_IDEAL]
+                
+                if (abs(THETA_6_DELTA) < tolerance):
+                    OKAY += [CENTER_MARGIN]
+                    if False:
+                        print(f"探索中断 [{n} / {repeat}] (L1: +{CENTER_MARGIN} mm)")
+                        break
+            except Exception as e:
+                if is_valid_upper:
+                    print(f"探索中断 [{n} / {repeat}] (L1: +{CENTER_MARGIN} mm): {e}")
+                    break
+                print(f"スキップ [{n} / {repeat}] (L1: +{CENTER_MARGIN} mm): {e}")
+                
+        X.reverse()
+        Y1.reverse()
+        Y2.reverse()
+        
+        
         try:
-            THETA_6, THETA_6_IDEAL = calc(*pos_target(v), v, 12.7, tube_d / 2, 1)
+            THETA_6, THETA_6_IDEAL = calc(*POS.CENTER(), beta_1, 12.7, tube_d / 2, 1)
             print(f"θ6: {THETA_6}, θ6_id: {THETA_6_IDEAL}")
             is_valid = True
-
             THETA_6_DELTA = THETA_6_IDEAL - THETA_6
-            
-            X  += [v]
+            X  += [0]
             Y1 += [THETA_6]
             Y2 += [THETA_6_IDEAL]
-            
-            if (abs(THETA_6_DELTA) < tolerance):
-                OKAY += [v]
-                if False:
-                    print(f"探索中断 [{n} / {repeat}] (β1: {v} deg)")
+        except:
+            pass
+        
+        
+        for n in range(repeat - 1):
+            CENTER_MARGIN = (n + 1) * step
+            # lower
+            try:
+                THETA_6, THETA_6_IDEAL = calc(*POS.LOWER(beta_1), beta_1, 12.7, tube_d / 2, 1)
+                print(f"θ6: {THETA_6}, θ6_id: {THETA_6_IDEAL}")
+                is_valid_lower = True
+
+                THETA_6_DELTA = THETA_6_IDEAL - THETA_6
+                
+                X  += [-CENTER_MARGIN]
+                Y1 += [THETA_6]
+                Y2 += [THETA_6_IDEAL]
+                
+                if (abs(THETA_6_DELTA) < tolerance):
+                    OKAY += [-CENTER_MARGIN]
+                    if False:
+                        print(f"探索中断 [{n} / {repeat}] (L1: -{CENTER_MARGIN} mm)")
+                        break
+            except Exception as e:
+                if is_valid_lower:
+                    print(f"探索中断 [{n} / {repeat}] (L1: -{CENTER_MARGIN} mm): {e}")
                     break
-        except Exception as e:
-            if is_valid:
-                print(f"探索中断 [{n} / {repeat}] (β1: {v} deg): {e}")
-                break
-            print(f"スキップ [{n} / {repeat}] (β1: {v} deg): {e}")
-    l = len(X)
-    
-    _max: int = max(Y1 + Y2)
-    
-    pyplot.ylim(0, _max + 5)
-    if len(OKAY): pyplot.axvspan(min(OKAY), max(OKAY), color='gray')
-    pyplot.plot(X, Y1, '.-', label="calculated")
-    pyplot.plot(X, Y2, '.-', label="ideal")
-    pyplot.plot(X[l - 1], Y1[l - 1], '*')
-    pyplot.plot(X[l - 1], Y2[l - 1], '*')
-    pyplot.xlabel('β1 [deg]')
-    pyplot.ylabel('θ6 [deg]')
-    pyplot.legend()
-    pyplot.grid()
-    pyplot.show()
+                print(f"スキップ [{n} / {repeat}] (L1: -{CENTER_MARGIN} mm): {e}")
+                
+                
+        l = len(X)
+        _max: float = max(Y1 + Y2)
+        
+        pyplot.title(f'Φ{phi}\nmargin: {ag} [deg]\n Valid L1={round(min(OKAY), 7)}~{round(max(OKAY), 7)}')
+        
+        pyplot.ylim(0, _max + 5)
+        if len(OKAY): pyplot.axvspan(min(OKAY), max(OKAY), color='gray')
+        pyplot.plot(X, Y1, '.-', label="calculated")
+        pyplot.plot(X, Y2, '.-', label="ideal")
+        #pyplot.plot(X[l - 1], Y1[l - 1], '*')
+        #pyplot.plot(X[l - 1], Y2[l - 1], '*')
+        pyplot.xlabel(f'L1 [mm] (± {pm} mm)')
+        pyplot.ylabel('θ6 [deg]')
+        
+        #pyplot.text(0, 0, f'L1: ± {pm} [mm]\nmargin: {ag} [deg]', bbox={
+        #    "facecolor" : "white",
+        #    "edgecolor" : "red",
+        #    "linewidth" : 1
+        #})
+        pyplot.legend()
+        pyplot.grid()
+        pyplot.show()
+        
+        # qs.text('').ask()
 
 
 
